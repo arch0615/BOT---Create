@@ -1,0 +1,12 @@
+node_modules/
+dist/
+ID cards/
+*.jpeg
+*.jpg
+*.png
+*.bmp
+*.tiff
+*.tif
+*.webp
+cards.json
+cards.csv

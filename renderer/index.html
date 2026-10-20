@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'" />
+  <title>CIE Reader</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13h3"/></svg>
+      <div>
+        <h1>CIE Reader</h1>
+        <p id="summary">No cards yet</p>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="segmented" role="tablist" aria-label="View">
+        <button id="view-cards" class="seg active" role="tab" aria-selected="true">Cards</button>
+        <button id="view-table" class="seg" role="tab" aria-selected="false">Table</button>
+      </div>
+      <button id="btn-add" class="btn">Add images…</button>
+      <button id="btn-export" class="btn primary" disabled>Export CSV</button>
+      <button id="btn-settings" class="btn icon" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="progress" class="progress" hidden>
+    <div class="progress-text"><span id="progress-label">Reading images…</span><span id="progress-count"></span></div>
+    <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+  </div>
+
+  <main class="layout" id="cards-view">
+    <aside class="sidebar">
+      <div class="filters" role="tablist">
+        <button class="filter active" data-filter="all">All <span class="count-all">0</span></button>
+        <button class="filter" data-filter="review">To check <span class="count-review">0</span></button>
+        <button class="filter" data-filter="ok">Ready <span class="count-ok">0</span></button>
+      </div>
+      <ul id="card-list" class="card-list"></ul>
+      <button id="btn-clear" class="link-btn" hidden>Remove all cards</button>
+    </aside>
+
+    <section id="detail" class="detail">
+      <div id="empty" class="empty">
+        <div class="dropzone" id="dropzone">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <h2>Drop ID card images here</h2>
+          <p>Front and back of each Carta d'Identità Elettronica, as JPG or PNG. You can drop a whole folder.<br />Fronts and backs are matched automatically. Everything is processed on this computer.</p>
+          <button id="btn-add-empty" class="btn primary">Choose images…</button>
+        </div>
+      </div>
+
+      <div id="card-view" hidden>
+        <div class="card-head">
+          <div>
+            <h2 id="card-title"></h2>
+            <p id="card-sub"></p>
+          </div>
+          <div class="card-actions">
+            <span id="card-state" class="pill"></span>
+            <button id="btn-reviewed" class="btn"></button>
+            <button id="btn-login" class="btn" title="Open Libero.it registration and fill data from this card">Register</button>
+            <button id="btn-prev" class="btn icon" title="Previous card (Alt+↑)" aria-label="Previous card"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button id="btn-next" class="btn icon" title="Next card (Alt+↓)" aria-label="Next card"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button id="btn-delete" class="btn icon danger" title="Remove card" aria-label="Remove card"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="images">
+            <figure><figcaption>Front</figcaption><div class="img-box" id="img-front"></div></figure>
+            <figure><figcaption>Back</figcaption><div class="img-box" id="img-back"></div></figure>
+          </div>
+          <div class="form-col">
+            <ul id="notes" class="notes"></ul>
+            <form id="fields" class="fields" autocomplete="off"></form>
+            <p class="legend">
+              <span class="dot st-check"></span>Read by OCR, not confirmed: compare with the image
+              <span class="dot st-missing"></span>Missing or invalid
+              <span class="dot st-edited"></span>Edited by you / generated
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main id="table-view" class="table-view" hidden>
+    <div class="table-toolbar">
+      <div class="filters inline" role="tablist">
+        <button class="filter active" data-filter="all">All <span class="count-all">0</span></button>
+        <button class="filter" data-filter="review">To check <span class="count-review">0</span></button>
+        <button class="filter" data-filter="ok">Ready <span class="count-ok">0</span></button>
+      </div>
+      <p class="legend">
+        <span class="dot st-check"></span>Not confirmed: compare with the image
+        <span class="dot st-missing"></span>Missing or invalid
+        <span class="dot st-edited"></span>Edited / generated
+        <span class="dot st-default"></span>Default from Settings
+        <span class="hint">Enter moves down · hover a cell for details</span>
+      </p>
+    </div>
+    <div class="table-wrap" id="table-wrap">
+      <table class="grid" id="grid">
+        <thead id="grid-head"></thead>
+        <tbody id="grid-body"></tbody>
+      </table>
+      <div id="table-empty" class="table-empty" hidden>
+        <p>No cards yet. Drop ID card images anywhere in this window, or use <strong>Add images…</strong></p>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="settings" class="modal">
+    <form method="dialog">
+      <h2>Settings</h2>
+      <p class="muted">These values are not printed on the card. They are applied to every card and to the CSV.</p>
+      <label>Document type<input id="set-doctype" required /></label>
+      <label>Issuing body<input id="set-issuer" required /></label>
+      <h3>Generated emails</h3>
+      <p class="muted">Created automatically for every card: the holder's name plus 5 random digits. Only the address is created, not the mailbox.</p>
+      <label>Email domain<input id="set-domain" placeholder="libero.it" required pattern="[A-Za-z0-9.\-]+\.[A-Za-z]{2,}" /></label>
+      <label>Username format
+        <select id="set-format">
+          <option value="name.surname">name.surname</option>
+          <option value="namesurname">namesurname</option>
+          <option value="surname.name">surname.name</option>
+          <option value="n.surname">n.surname (initial)</option>
+        </select>
+      </label>
+      <p class="preview" id="set-preview"></p>
+      <h3>Account defaults</h3>
+      <p class="muted">Applied to every card. A value you type on a card overrides it; clearing that cell returns the card to the default.</p>
+      <label>Default password
+        <span class="input-row">
+          <input id="set-password" type="password" autocomplete="new-password" spellcheck="false" />
+          <button type="button" id="set-password-show" class="btn">Show</button>
+        </span>
+      </label>
+      <label>Default recovery email<input id="set-recovery" type="email" placeholder="recovery@example.com" spellcheck="false" /></label>
+      <div class="modal-actions">
+        <button value="cancel" class="btn" formnovalidate>Cancel</button>
+        <button value="save" id="set-save" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="lightbox" class="lightbox" hidden><img id="lightbox-img" alt="" /></div>
+  <div id="drop-overlay" class="drop-overlay" hidden><div>Drop images to add them</div></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

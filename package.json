@@ -1,0 +1,75 @@
+{
+  "name": "cie-reader",
+  "version": "1.0.0",
+  "description": "Reads Italian electronic ID cards (CIE) offline and exports the data as CSV",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/accuracy.js",
+    "build-csv": "node build-csv.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "author": "CIE Reader",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "jimp": "^1.6.1",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "CIE Reader",
+  "private": true,
+  "build": {
+    "appId": "local.cie-reader",
+    "productName": "CIE Reader",
+    "asar": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "lib/**",
+      "package.json",
+      "!test/**",
+      "!ID cards/**",
+      "!cards.*",
+      "!build-csv.js",
+      "!dist/**"
+    ],
+    "extraResources": [
+      {
+        "from": "tessdata",
+        "to": "tessdata"
+      },
+      {
+        "from": "data",
+        "to": "data"
+      },
+      {
+        "from": "licenses",
+        "to": "licenses"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "CIE Reader"
+    }
+  }
+}

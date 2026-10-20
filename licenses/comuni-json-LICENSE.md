@@ -1,0 +1,3 @@
+La fonte dei dati dei comuni è l'[archivio ISTAT](https://www.istat.it/it/archivio/6789), i cui dati sono rilasciati con licenza [CC BY 3.0 IT](https://creativecommons.org/licenses/by/3.0/it/). Sono state apportate modifiche alla struttura dei dati per essere forniti in formato JSON.
+
+I dati dei CAP provengono da varie fonti, che però non rendono chiara la licenza di utilizzo dei dati e non rispondono a richieste di chiarimento. Per questo motivo attualmente non viene applicata nessuna licenza a questa repository. Discussione sulla licenza [qua](http://lists.gfoss.it/pipermail/gfoss/2017-September/042109.html).
