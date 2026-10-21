@@ -254,7 +254,7 @@ const COL_WIDTH = {
   tax_id: 175, name: 130, surname: 140, birth_date: 108, nation: 90, birth_province: 64, birth_comune: 150, sex: 54,
   res_province: 64, res_city: 160, address: 280, house_number: 110, cap: 76, document_type: 210, issuing_body: 110,
   document_number: 112, place_of_issue: 160, issue_date: 108, expiry_date: 108, telephone: 140,
-  email: 300, password: 150, recovery_email: 260,
+  email: 300, username: 200, password: 150, recovery_email: 260,
 };
 const SHORT_LABEL = { birth_province: 'Prov.', res_province: 'Res. prov.', house_number: 'House no.', cap: 'CAP' };
 
@@ -527,6 +527,9 @@ function openSettings(focusDomain, then) {
   $('#set-password').type = 'password';
   $('#set-password-show').textContent = 'Show';
   $('#set-recovery').value = state.settings.defaultRecoveryEmail || '';
+  $('#set-openai-key').value = state.settings.openaiApiKey || '';
+  $('#set-openai-key').type = 'password';
+  $('#set-openai-show').textContent = 'Show';
   previewEmail();
   afterSettings = then || null;
   $('#settings').showModal();
@@ -537,6 +540,11 @@ $('#set-password-show').addEventListener('click', () => {
   const input = $('#set-password');
   input.type = input.type === 'password' ? 'text' : 'password';
   $('#set-password-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
+});
+$('#set-openai-show').addEventListener('click', () => {
+  const input = $('#set-openai-key');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  $('#set-openai-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
 });
 $('#set-format').addEventListener('change', previewEmail);
 $('#btn-settings').addEventListener('click', () => openSettings(false));
@@ -552,6 +560,7 @@ $('#settings').addEventListener('close', async () => {
       emailFormat: $('#set-format').value,
       defaultPassword: $('#set-password').value,
       defaultRecoveryEmail: $('#set-recovery').value.trim(),
+      openaiApiKey: $('#set-openai-key').value.trim(),
     });
   } catch (err) {
     toast(String(err.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));

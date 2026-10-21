@@ -143,6 +143,14 @@
         </span>
       </label>
       <label>Default recovery email<input id="set-recovery" type="email" placeholder="recovery@example.com" spellcheck="false" /></label>
+      <h3>AI Vision (OpenAI)</h3>
+      <p class="muted">Optional. Uses GPT-4o to read ID card images with much higher accuracy. Requires an OpenAI API key.</p>
+      <label>OpenAI API key
+        <span class="input-row">
+          <input id="set-openai-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-proj-…" />
+          <button type="button" id="set-openai-show" class="btn">Show</button>
+        </span>
+      </label>
       <div class="modal-actions">
         <button value="cancel" class="btn" formnovalidate>Cancel</button>
         <button value="save" id="set-save" class="btn primary">Save</button>

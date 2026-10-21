@@ -10,6 +10,7 @@ comuniDb.load(path.join(resDir, 'data'));
 const { OcrEngine } = require('./lib/ocr');
 const { extractCard } = require('./lib/extract');
 const { parseMrz } = require('./lib/mrz');
+const { extractWithVision } = require('./lib/vision');
 const { FIELDS, CSV_ORDER, MANUAL_KEYS, SECRET_KEYS, validate, cardState, toCsv } = require('./lib/record');
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|bmp|tiff?)$/i;
@@ -28,6 +29,7 @@ let session = {
     emailFormat: 'name.surname',
     defaultPassword: 'Cacata0!',
     defaultRecoveryEmail: 'botpotente0@libero.it',
+    openaiApiKey: '',
   },
 };
 
@@ -55,7 +57,16 @@ function autoEmail(card, fresh = false) {
   if (!email || email === card.fields.email) return false;
   card.fields.email = email;
   card.status.email = 'generated';
+  syncUsername(card);
   return true;
+}
+
+function syncUsername(card) {
+  if (card.fields.username && card.status.username === 'edited') return;
+  const email = card.fields.email || '';
+  const name = email.split('@')[0] || '';
+  card.fields.username = name;
+  card.status.username = name ? 'generated' : 'manual';
 }
 let busy = false;
 
@@ -89,8 +100,10 @@ function loadSession() {
     for (const k of SECRET_KEYS) c.fields[k] = decrypt(c.fields[k]);
   }
   session.settings.defaultPassword = decrypt(session.settings.defaultPassword);
+  session.settings.openaiApiKey = decrypt(session.settings.openaiApiKey);
   for (const c of session.cards) {
     autoEmail(c); // cards saved before emails were generated automatically
+    syncUsername(c);
     applyDefaults(c);
   }
 }
@@ -102,7 +115,7 @@ function saveSession() {
     for (const k of SECRET_KEYS) fields[k] = encrypt(fields[k]);
     return { ...c, fields };
   });
-  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword) };
+  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey) };
   fs.writeFileSync(sessionFile(), JSON.stringify({ ...session, settings, cards }));
 }
 
@@ -232,6 +245,33 @@ ipcMain.handle('images:pick', async () => {
 
 ipcMain.handle('images:process', (_e, paths) => processFiles(paths));
 
+const displayName = (c) => [c.fields.surname, c.fields.name].filter(Boolean).join(' ') || 'card';
+
+const VISION_FIELDS = [
+  'surname', 'name', 'birth_date', 'sex', 'birth_comune', 'birth_province',
+  'nation', 'tax_id', 'res_city', 'res_province', 'address', 'house_number',
+  'cap', 'document_number', 'issue_date', 'expiry_date', 'place_of_issue',
+];
+
+function enhanceWithVision(card, vision) {
+  for (const key of VISION_FIELDS) {
+    const visionVal = (vision[key] || '').trim();
+    if (!visionVal) continue;
+    const currentVal = card.fields[key] || '';
+    const currentStatus = card.status[key];
+    if (currentStatus === 'ok' && currentVal) continue;
+    if (currentStatus === 'missing' || !currentVal) {
+      card.fields[key] = visionVal;
+      card.status[key] = 'check';
+      continue;
+    }
+    if (currentStatus === 'check') {
+      card.fields[key] = visionVal;
+      card.status[key] = 'check';
+    }
+  }
+}
+
 async function processFiles(paths) {
   if (busy) throw new Error('Already processing images');
   const known = new Set(session.cards.flatMap((c) => [c.front, c.back]).filter(Boolean));
@@ -255,6 +295,21 @@ async function processFiles(paths) {
 
     const unknown = results.filter((r) => r.side === 'unknown').map((r) => path.basename(r.file));
     const cards = pairUp(results.filter((r) => r.side !== 'unknown')).map(buildCard);
+
+    const apiKey = session.settings.openaiApiKey;
+    if (apiKey) {
+      for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+        win.webContents.send('progress', { done: files.length + i, total: files.length + cards.length, file: `AI reading ${displayName(c)}…` });
+        try {
+          const vision = await extractWithVision(apiKey, c.front, c.back);
+          if (vision) enhanceWithVision(c, vision);
+        } catch (err) {
+          c.notes.push(`AI vision: ${err.message}`);
+        }
+      }
+    }
+
     session.cards.push(...cards);
     for (const c of cards) {
       autoEmail(c);
@@ -285,6 +340,11 @@ ipcMain.handle('card:update', (_e, id, changes, reviewed) => {
   if (changes && ('name' in changes || 'surname' in changes || changes.email === '')) {
     if (changes.email === '') card.status.email = 'manual';
     autoEmail(card);
+  }
+  // Sync username from email when email changes, or when username is cleared.
+  if (changes && ('email' in changes || changes.username === '')) {
+    if (changes.username === '') card.status.username = 'manual';
+    syncUsername(card);
   }
   // Clearing the password or recovery email puts the card back on the default from Settings.
   if (changes && Object.keys(DEFAULTS).some((k) => changes[k] === '')) applyDefaults(card);
@@ -326,6 +386,7 @@ ipcMain.handle('settings:set', (_e, settings) => {
     c.fields.document_type = session.settings.documentType;
     c.fields.issuing_body = session.settings.issuingBody;
     autoEmail(c); // new domain / format applies to generated addresses, keeping their digits
+    syncUsername(c);
     applyDefaults(c); // new defaults apply to every card that has not been given its own value
   }
   saveSession();
@@ -359,7 +420,7 @@ ipcMain.handle('login:open', async (_e, id) => {
 
   const email = card.fields.email || '';
   const password = card.fields.password || '';
-  const username = email.split('@')[0];
+  const username = card.fields.username || email.split('@')[0];
 
   if (!username) throw new Error('No email address on this card');
   if (!password) throw new Error('No password on this card');
