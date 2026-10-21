@@ -72,6 +72,7 @@ function renderList() {
   $('#btn-export').disabled = !state.cards.length || state.busy;
   $('#btn-add').disabled = state.busy;
   $('#btn-clear').hidden = !state.cards.length || state.busy;
+  $('#btn-clear-all').disabled = !state.cards.length || state.busy;
 }
 
 // --- Card view ------------------------------------------------------------------------------------
@@ -489,6 +490,10 @@ $('#btn-delete').addEventListener('click', async () => {
 });
 
 $('#btn-clear').addEventListener('click', async () => {
+  if (await api.clearCards()) await reload(null);
+});
+
+$('#btn-clear-all').addEventListener('click', async () => {
   if (await api.clearCards()) await reload(null);
 });
 

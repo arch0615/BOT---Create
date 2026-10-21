@@ -43,7 +43,8 @@ button { font: inherit; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn.icon { width: 34px; padding: 0; justify-content: center; }
-.btn.danger:hover:not(:disabled) { color: var(--err); border-color: var(--err); background: var(--err-bg); }
+.btn.danger { color: var(--err); border-color: var(--err); }
+.btn.danger:hover:not(:disabled) { background: var(--err-bg); }
 .btn:focus-visible, .filter:focus-visible, .card-list li:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 10px 14px; font-size: 12.5px; text-align: left; }
 .link-btn:hover { color: var(--err); }
