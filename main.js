@@ -364,76 +364,11 @@ ipcMain.handle('login:open', async (_e, id) => {
   if (!username) throw new Error('No email address on this card');
   if (!password) throw new Error('No password on this card');
 
-  const data = JSON.stringify({
-    username,
-    password,
-    name: card.fields.name || '',
-    surname: card.fields.surname || '',
-    birthDate: card.fields.birth_date || '',
-    sex: card.fields.sex || '',
-    city: card.fields.res_city || '',
-    recoveryEmail: card.fields.recovery_email || '',
-  });
-
-  const regWin = new BrowserWindow({
-    width: 900,
-    height: 750,
-    parent: win,
-    title: `Register – ${email}`,
-    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
-  });
-  regWin.removeMenu();
-  regWin.loadURL('https://registrazione.libero.it/');
-
-  const fillScript = `(function(){
-    if(window.__cieAutoFill)return;
-    window.__cieAutoFill=true;
-    var D=${data};
-    var setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
-    function fill(el,v){if(!el||!v)return;setter.call(el,v);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
-    function fillAutocomplete(el,v){if(!el||!v)return;el.focus();el.click();setter.call(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));var idx=0;function typeChar(){if(idx>=v.length){setTimeout(pickOption,800);return;}var ch=v[idx++];setter.call(el,v.slice(0,idx));el.dispatchEvent(new KeyboardEvent('keydown',{key:ch,bubbles:true}));el.dispatchEvent(new KeyboardEvent('keypress',{key:ch,bubbles:true}));el.dispatchEvent(new InputEvent('input',{data:ch,inputType:'insertText',bubbles:true}));el.dispatchEvent(new KeyboardEvent('keyup',{key:ch,bubbles:true}));setTimeout(typeChar,50);}function pickOption(){var sel='[role=option],[role=listbox] li,ul[class*=auto] li,ul[class*=suggest] li,li[class*=option],div[class*=dropdown] div[class*=item],div[class*=autocomplete] li,[class*=menu] li,[class*=listbox] li';var opts=document.querySelectorAll(sel);for(var i=0;i<opts.length;i++){if(opts[i].textContent.trim().toLowerCase().indexOf(v.toLowerCase())>=0&&opts[i].offsetParent!==null){opts[i].dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));opts[i].click();return;}}var all=document.querySelectorAll('li,div[role=option]');for(var j=0;j<all.length;j++){if(all[j].textContent.trim().toLowerCase().indexOf(v.toLowerCase())>=0&&all[j].offsetParent!==null){all[j].dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));all[j].click();return;}}}typeChar();}
-    function clickAvanti(){var b=document.querySelectorAll('button,input[type=submit]');for(var i=0;i<b.length;i++)if(/avanti/i.test(b[i].textContent||b[i].value)){b[i].click();return;}}
-    function byLabel(re){var ls=document.querySelectorAll('label');for(var i=0;i<ls.length;i++){if(re.test(ls[i].textContent.trim())){var inp=ls[i].querySelector('input');if(inp)return inp;if(ls[i].htmlFor)return document.getElementById(ls[i].htmlFor);}}var ins=document.querySelectorAll('input');for(var j=0;j<ins.length;j++)if(re.test(ins[j].placeholder||''))return ins[j];return null;}
-
-    function clickBtn(re){var b=document.querySelectorAll('button,input[type=submit]');for(var i=0;i<b.length;i++)if(re.test(b[i].textContent||b[i].value)){b[i].click();return;}}
-
-    var filled={};
-    var timer=setInterval(function(){
-      var passEl=document.querySelector('input[type=password]');
-      var body=(document.body.innerText||'');
-
-      if(passEl&&passEl.offsetParent!==null&&!filled.p1){
-        var inputs=document.querySelectorAll('input'),userEl=null;
-        for(var i=0;i<inputs.length;i++){if(inputs[i]!==passEl&&['text','email',''].indexOf(inputs[i].type)>=0&&inputs[i].offsetParent!==null){userEl=inputs[i];break;}}
-        if(userEl){fill(userEl,D.username);fill(passEl,D.password);filled.p1=true;}
-      }
-
-      if(!passEl&&/cognome|informazioni personali/i.test(body)&&!filled.p2){
-        var nEl=byLabel(/^nome$/i),sEl=byLabel(/cognome/i),bEl=byLabel(/data.*nascita/i),cEl=byLabel(/citt/i);
-        if(nEl||sEl){
-          fill(nEl,D.name);fill(sEl,D.surname);fill(bEl,D.birthDate);fillAutocomplete(cEl,D.city);
-          if(D.sex){var tgt=D.sex==='M'?'uomo':'donna';document.querySelectorAll('label').forEach(function(l){if(l.textContent.trim().toLowerCase()===tgt){var r=l.querySelector('input[type=radio]');if(r)r.click();else l.click();}});}
-          filled.p2=true;setTimeout(clickAvanti,3000);
-        }
-      }
-
-      if(/sicurezza|protezione account/i.test(body)&&!filled.p3){
-        var recEl=byLabel(/mail.*cellulare/i);
-        if(recEl){
-          fill(recEl,D.recoveryEmail);
-          document.querySelectorAll('label').forEach(function(l){if(/^presto il consenso$/i.test(l.textContent.trim())){var r=l.querySelector('input[type=radio]');if(r&&!r.checked)r.click();else if(!r)l.click();}});
-          filled.p3=true;setTimeout(function(){clickBtn(/registrati/i);},500);
-        }
-      }
-
-      if(filled.p1&&filled.p2&&filled.p3)clearInterval(timer);
-    },800);
-    setTimeout(function(){clearInterval(timer);},120000);
-  })();`;
-
-  regWin.webContents.on('did-finish-load', () => {
-    regWin.webContents.executeJavaScript(fillScript).catch(() => {});
-  });
+  const { register } = require('./lib/browser');
+  register(
+    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail },
+    (msg) => win.webContents.send('progress', { done: 0, total: 0, file: msg })
+  ).catch((err) => console.error('Registration error:', err));
 
   return { email };
 });

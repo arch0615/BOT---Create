@@ -13,6 +13,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "jimp": "^1.6.1",
+    "puppeteer-core": "^25.15.0",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
