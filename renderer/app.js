@@ -527,6 +527,9 @@ function openSettings(focusDomain, then) {
   $('#set-password').type = 'password';
   $('#set-password-show').textContent = 'Show';
   $('#set-recovery').value = state.settings.defaultRecoveryEmail || '';
+  $('#set-5sim-token').value = state.settings.fiveSimToken || '';
+  $('#set-5sim-token').type = 'password';
+  $('#set-5sim-show').textContent = 'Show';
   $('#set-openai-key').value = state.settings.openaiApiKey || '';
   $('#set-openai-key').type = 'password';
   $('#set-openai-show').textContent = 'Show';
@@ -540,6 +543,11 @@ $('#set-password-show').addEventListener('click', () => {
   const input = $('#set-password');
   input.type = input.type === 'password' ? 'text' : 'password';
   $('#set-password-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
+});
+$('#set-5sim-show').addEventListener('click', () => {
+  const input = $('#set-5sim-token');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  $('#set-5sim-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
 });
 $('#set-openai-show').addEventListener('click', () => {
   const input = $('#set-openai-key');
@@ -560,6 +568,7 @@ $('#settings').addEventListener('close', async () => {
       emailFormat: $('#set-format').value,
       defaultPassword: $('#set-password').value,
       defaultRecoveryEmail: $('#set-recovery').value.trim(),
+      fiveSimToken: $('#set-5sim-token').value.trim(),
       openaiApiKey: $('#set-openai-key').value.trim(),
     });
   } catch (err) {

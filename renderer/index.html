@@ -143,6 +143,14 @@
         </span>
       </label>
       <label>Default recovery email<input id="set-recovery" type="email" placeholder="recovery@example.com" spellcheck="false" /></label>
+      <h3>SMS Verification (5sim)</h3>
+      <p class="muted">Optional. Uses 5sim.net to get a virtual phone number and auto-verify SMS during registration.</p>
+      <label>5sim API token
+        <span class="input-row">
+          <input id="set-5sim-token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJhbG…" />
+          <button type="button" id="set-5sim-show" class="btn">Show</button>
+        </span>
+      </label>
       <h3>AI Vision (OpenAI)</h3>
       <p class="muted">Optional. Uses GPT-4o to read ID card images with much higher accuracy. Requires an OpenAI API key.</p>
       <label>OpenAI API key

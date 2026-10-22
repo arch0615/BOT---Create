@@ -26,10 +26,11 @@ let session = {
     documentType: "Carta d'identità elettronica",
     issuingBody: 'Comune',
     emailDomain: 'libero.it',
-    emailFormat: 'name.surname',
+    emailFormat: 'namesurname',
     defaultPassword: 'Cacata0!',
     defaultRecoveryEmail: 'botpotente0@libero.it',
     openaiApiKey: '',
+    fiveSimToken: '',
   },
 };
 
@@ -101,6 +102,7 @@ function loadSession() {
   }
   session.settings.defaultPassword = decrypt(session.settings.defaultPassword);
   session.settings.openaiApiKey = decrypt(session.settings.openaiApiKey);
+  session.settings.fiveSimToken = decrypt(session.settings.fiveSimToken);
   for (const c of session.cards) {
     autoEmail(c); // cards saved before emails were generated automatically
     syncUsername(c);
@@ -115,7 +117,7 @@ function saveSession() {
     for (const k of SECRET_KEYS) fields[k] = encrypt(fields[k]);
     return { ...c, fields };
   });
-  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey) };
+  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey), fiveSimToken: encrypt(session.settings.fiveSimToken) };
   fs.writeFileSync(sessionFile(), JSON.stringify({ ...session, settings, cards }));
 }
 
@@ -427,7 +429,7 @@ ipcMain.handle('login:open', async (_e, id) => {
 
   const { register } = require('./lib/browser');
   register(
-    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail },
+    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken },
     (msg) => win.webContents.send('progress', { done: 0, total: 0, file: msg })
   ).catch((err) => console.error('Registration error:', err));
 
