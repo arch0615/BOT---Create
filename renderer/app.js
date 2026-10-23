@@ -616,9 +616,21 @@ window.addEventListener('drop', (e) => {
 });
 
 api.onProgress(({ done, total, file }) => {
-  $('#progress-bar').style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
-  $('#progress-label').textContent = file ? `Reading ${file}` : 'Matching fronts and backs…';
-  $('#progress-count').textContent = `${Math.min(done + 1, total)} of ${total}`;
+  const progress = $('#progress');
+  if (total > 0) {
+    progress.hidden = false;
+    $('#progress-bar').style.width = `${Math.round((done / total) * 100)}%`;
+    $('#progress-label').textContent = file ? `Reading ${file}` : 'Matching fronts and backs…';
+    $('#progress-count').textContent = `${Math.min(done + 1, total)} of ${total}`;
+  } else if (file) {
+    progress.hidden = false;
+    $('#progress-bar').style.width = '100%';
+    $('#progress-label').textContent = file;
+    $('#progress-count').textContent = '';
+    if (/complete|error/i.test(file)) {
+      setTimeout(() => { progress.hidden = true; }, 8000);
+    }
+  }
 });
 
 let savedView = 'cards';

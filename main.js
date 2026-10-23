@@ -431,7 +431,10 @@ ipcMain.handle('login:open', async (_e, id) => {
   register(
     { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken },
     (msg) => win.webContents.send('progress', { done: 0, total: 0, file: msg })
-  ).catch((err) => console.error('Registration error:', err));
+  ).catch((err) => {
+    console.error('Registration error:', err);
+    win.webContents.send('progress', { done: 0, total: 0, file: `Error: ${err.message}` });
+  });
 
   return { email };
 });
