@@ -535,6 +535,7 @@ function openSettings(focusDomain, then) {
   $('#set-5sim-token').type = 'password';
   $('#set-5sim-show').textContent = 'Show';
   $('#fivesim-status').textContent = '';
+  $('#set-proxy-url').value = state.settings.proxyUrl || '';
   $('#set-openai-key').value = state.settings.openaiApiKey || '';
   $('#set-openai-key').type = 'password';
   $('#set-openai-show').textContent = 'Show';
@@ -596,6 +597,7 @@ $('#settings').addEventListener('close', async () => {
       defaultRecoveryEmail: $('#set-recovery').value.trim(),
       capsolverKey: $('#set-capsolver-key').value.trim(),
       fiveSimToken: $('#set-5sim-token').value.trim(),
+      proxyUrl: $('#set-proxy-url').value.trim(),
       openaiApiKey: $('#set-openai-key').value.trim(),
     });
   } catch (err) {

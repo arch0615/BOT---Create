@@ -33,6 +33,7 @@ let session = {
     openaiApiKey: '',
     fiveSimToken: '',
     capsolverKey: '',
+    proxyUrl: '',
   },
 };
 
@@ -461,7 +462,7 @@ ipcMain.handle('login:open', async (_e, id) => {
 
   const { register } = require('./lib/browser');
   register(
-    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY},
+    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY, proxyUrl: session.settings.proxyUrl || process.env.PROXY_URL},
     (msg) => { try { if (win && !win.isDestroyed()) win.webContents.send('progress', { done: 0, total: 0, file: msg }); } catch {} }
   ).catch((err) => {
     console.error('Registration error:', err);
