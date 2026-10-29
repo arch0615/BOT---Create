@@ -143,14 +143,26 @@
         </span>
       </label>
       <label>Default recovery email<input id="set-recovery" type="email" placeholder="recovery@example.com" spellcheck="false" /></label>
+      <h3>CAPTCHA Solver (CapSolver)</h3>
+      <p class="muted">Optional. Uses CapSolver to automatically solve reCAPTCHA during registration.</p>
+      <label>CapSolver API key
+        <span class="input-row">
+          <input id="set-capsolver-key" type="password" autocomplete="off" spellcheck="false" placeholder="CAP-…" />
+          <button type="button" id="set-capsolver-show" class="btn">Show</button>
+          <button type="button" id="check-capsolver" class="btn">Check</button>
+        </span>
+      </label>
+      <p class="muted status-line" id="capsolver-status"></p>
       <h3>SMS Verification (5sim)</h3>
       <p class="muted">Optional. Uses 5sim.net to get a virtual phone number and auto-verify SMS during registration.</p>
       <label>5sim API token
         <span class="input-row">
           <input id="set-5sim-token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJhbG…" />
           <button type="button" id="set-5sim-show" class="btn">Show</button>
+          <button type="button" id="check-5sim" class="btn">Check</button>
         </span>
       </label>
+      <p class="muted status-line" id="fivesim-status"></p>
       <h3>AI Vision (OpenAI)</h3>
       <p class="muted">Optional. Uses GPT-4o to read ID card images with much higher accuracy. Requires an OpenAI API key.</p>
       <label>OpenAI API key

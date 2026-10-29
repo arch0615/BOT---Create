@@ -12,6 +12,7 @@
   "author": "CIE Reader",
   "license": "UNLICENSED",
   "dependencies": {
+    "dotenv": "^18.0.9",
     "jimp": "^1.6.1",
     "puppeteer-core": "^25.15.0",
     "puppeteer-extra": "^3.3.6",

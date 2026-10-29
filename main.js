@@ -1,4 +1,5 @@
 // Electron main process: OCR pipeline, session storage and CSV export.
+require('dotenv').config();
 const { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -31,6 +32,7 @@ let session = {
     defaultRecoveryEmail: 'botpotente0@libero.it',
     openaiApiKey: '',
     fiveSimToken: '',
+    capsolverKey: '',
   },
 };
 
@@ -103,6 +105,7 @@ function loadSession() {
   session.settings.defaultPassword = decrypt(session.settings.defaultPassword);
   session.settings.openaiApiKey = decrypt(session.settings.openaiApiKey);
   session.settings.fiveSimToken = decrypt(session.settings.fiveSimToken);
+  session.settings.capsolverKey = decrypt(session.settings.capsolverKey);
   for (const c of session.cards) {
     autoEmail(c); // cards saved before emails were generated automatically
     syncUsername(c);
@@ -117,7 +120,7 @@ function saveSession() {
     for (const k of SECRET_KEYS) fields[k] = encrypt(fields[k]);
     return { ...c, fields };
   });
-  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey), fiveSimToken: encrypt(session.settings.fiveSimToken) };
+  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey), fiveSimToken: encrypt(session.settings.fiveSimToken), capsolverKey: encrypt(session.settings.capsolverKey) };
   fs.writeFileSync(sessionFile(), JSON.stringify({ ...session, settings, cards }));
 }
 
@@ -395,6 +398,35 @@ ipcMain.handle('settings:set', (_e, settings) => {
   return session.settings;
 });
 
+// --- Service status checks ---
+ipcMain.handle('status:5sim', async (_e, token) => {
+  const t = token || session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN;
+  if (!t) return { ok: false, error: 'No 5sim token configured' };
+  try {
+    const balance = await sms.getBalance(t);
+    return { ok: true, balance: parseFloat(balance).toFixed(2) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('status:capsolver', async (_e, key) => {
+  const k = key || session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY;
+  if (!k) return { ok: false, error: 'No CapSolver key configured' };
+  try {
+    const res = await fetch('https://api.capsolver.com/getBalance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientKey: k }),
+    });
+    const data = await res.json();
+    if (data.errorId && data.errorId !== 0) return { ok: false, error: data.errorDescription || 'API error' };
+    return { ok: true, balance: parseFloat(data.balance).toFixed(2) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // "New address" on one card: same username, new random digits (e.g. when the address is taken).
 ipcMain.handle('emails:regenerate', (_e, id) => {
   const card = session.cards.find((c) => c.id === id);
@@ -429,11 +461,11 @@ ipcMain.handle('login:open', async (_e, id) => {
 
   const { register } = require('./lib/browser');
   register(
-    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken },
-    (msg) => win.webContents.send('progress', { done: 0, total: 0, file: msg })
+    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY},
+    (msg) => { try { if (win && !win.isDestroyed()) win.webContents.send('progress', { done: 0, total: 0, file: msg }); } catch {} }
   ).catch((err) => {
     console.error('Registration error:', err);
-    win.webContents.send('progress', { done: 0, total: 0, file: `Error: ${err.message}` });
+    try { if (win && !win.isDestroyed()) win.webContents.send('progress', { done: 0, total: 0, file: `Error: ${err.message}` }); } catch {}
   });
 
   return { email };

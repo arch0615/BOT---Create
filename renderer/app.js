@@ -527,9 +527,14 @@ function openSettings(focusDomain, then) {
   $('#set-password').type = 'password';
   $('#set-password-show').textContent = 'Show';
   $('#set-recovery').value = state.settings.defaultRecoveryEmail || '';
+  $('#set-capsolver-key').value = state.settings.capsolverKey || '';
+  $('#set-capsolver-key').type = 'password';
+  $('#set-capsolver-show').textContent = 'Show';
+  $('#capsolver-status').textContent = '';
   $('#set-5sim-token').value = state.settings.fiveSimToken || '';
   $('#set-5sim-token').type = 'password';
   $('#set-5sim-show').textContent = 'Show';
+  $('#fivesim-status').textContent = '';
   $('#set-openai-key').value = state.settings.openaiApiKey || '';
   $('#set-openai-key').type = 'password';
   $('#set-openai-show').textContent = 'Show';
@@ -544,10 +549,31 @@ $('#set-password-show').addEventListener('click', () => {
   input.type = input.type === 'password' ? 'text' : 'password';
   $('#set-password-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
 });
+$('#set-capsolver-show').addEventListener('click', () => {
+  const input = $('#set-capsolver-key');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  $('#set-capsolver-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
+});
+$('#check-capsolver').addEventListener('click', async () => {
+  const el = $('#capsolver-status');
+  el.textContent = 'Checking…';
+  el.style.color = '';
+  const r = await api.checkCapsolver($('#set-capsolver-key').value.trim());
+  if (r.ok) { el.textContent = `✅ Balance: $${r.balance}`; el.style.color = '#2a7'; }
+  else { el.textContent = `❌ ${r.error}`; el.style.color = '#d44'; }
+});
 $('#set-5sim-show').addEventListener('click', () => {
   const input = $('#set-5sim-token');
   input.type = input.type === 'password' ? 'text' : 'password';
   $('#set-5sim-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
+});
+$('#check-5sim').addEventListener('click', async () => {
+  const el = $('#fivesim-status');
+  el.textContent = 'Checking…';
+  el.style.color = '';
+  const r = await api.check5sim($('#set-5sim-token').value.trim());
+  if (r.ok) { el.textContent = `✅ Balance: ${r.balance} RUB`; el.style.color = '#2a7'; }
+  else { el.textContent = `❌ ${r.error}`; el.style.color = '#d44'; }
 });
 $('#set-openai-show').addEventListener('click', () => {
   const input = $('#set-openai-key');
@@ -568,6 +594,7 @@ $('#settings').addEventListener('close', async () => {
       emailFormat: $('#set-format').value,
       defaultPassword: $('#set-password').value,
       defaultRecoveryEmail: $('#set-recovery').value.trim(),
+      capsolverKey: $('#set-capsolver-key').value.trim(),
       fiveSimToken: $('#set-5sim-token').value.trim(),
       openaiApiKey: $('#set-openai-key').value.trim(),
     });

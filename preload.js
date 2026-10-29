@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('api', {
   exportCsv: () => ipcRenderer.invoke('csv:export'),
   regenerateEmail: (id) => ipcRenderer.invoke('emails:regenerate', id),
   openLogin: (id) => ipcRenderer.invoke('login:open', id),
+  check5sim: (token) => ipcRenderer.invoke('status:5sim', token),
+  checkCapsolver: (key) => ipcRenderer.invoke('status:capsolver', key),
   reveal: (p) => ipcRenderer.invoke('file:reveal', p),
   imageData: (p) => ipcRenderer.invoke('image:data', p),
   pathForFile: (file) => webUtils.getPathForFile(file),
