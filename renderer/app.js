@@ -70,6 +70,7 @@ function renderList() {
     ? `${state.cards.length} card${state.cards.length === 1 ? '' : 's'} · ${ok} ready · ${state.cards.length - ok} to check`
     : 'No cards yet';
   $('#btn-export').disabled = !state.cards.length || state.busy;
+  $('#btn-register-all').disabled = !state.cards.length || state.busy;
   $('#btn-add').disabled = state.busy;
   $('#btn-clear').hidden = !state.cards.length || state.busy;
   $('#btn-clear-all').disabled = !state.cards.length || state.busy;
@@ -459,6 +460,16 @@ $('#btn-login').addEventListener('click', async () => {
   }
 });
 
+$('#btn-register-all').addEventListener('click', async () => {
+  if (!state.cards.length) return;
+  try {
+    toast('Starting batch registration…');
+    await api.registerAll();
+  } catch (err) {
+    toast(String(err.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));
+  }
+});
+
 $('#btn-reviewed').addEventListener('click', async () => {
   const card = state.cards.find((c) => c.id === state.selected);
   if (!card) return;
@@ -531,10 +542,10 @@ function openSettings(focusDomain, then) {
   $('#set-capsolver-key').type = 'password';
   $('#set-capsolver-show').textContent = 'Show';
   $('#capsolver-status').textContent = '';
-  $('#set-5sim-token').value = state.settings.fiveSimToken || '';
-  $('#set-5sim-token').type = 'password';
-  $('#set-5sim-show').textContent = 'Show';
-  $('#fivesim-status').textContent = '';
+  $('#set-herosms-key').value = state.settings.heroSmsKey || '';
+  $('#set-herosms-key').type = 'password';
+  $('#set-herosms-show').textContent = 'Show';
+  $('#herosms-status').textContent = '';
   $('#set-proxy-url').value = state.settings.proxyUrl || '';
   $('#set-openai-key').value = state.settings.openaiApiKey || '';
   $('#set-openai-key').type = 'password';
@@ -563,17 +574,17 @@ $('#check-capsolver').addEventListener('click', async () => {
   if (r.ok) { el.textContent = `✅ Balance: $${r.balance}`; el.style.color = '#2a7'; }
   else { el.textContent = `❌ ${r.error}`; el.style.color = '#d44'; }
 });
-$('#set-5sim-show').addEventListener('click', () => {
-  const input = $('#set-5sim-token');
+$('#set-herosms-show').addEventListener('click', () => {
+  const input = $('#set-herosms-key');
   input.type = input.type === 'password' ? 'text' : 'password';
-  $('#set-5sim-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
+  $('#set-herosms-show').textContent = input.type === 'password' ? 'Show' : 'Hide';
 });
-$('#check-5sim').addEventListener('click', async () => {
-  const el = $('#fivesim-status');
+$('#check-herosms').addEventListener('click', async () => {
+  const el = $('#herosms-status');
   el.textContent = 'Checking…';
   el.style.color = '';
-  const r = await api.check5sim($('#set-5sim-token').value.trim());
-  if (r.ok) { el.textContent = `✅ Balance: ${r.balance} RUB`; el.style.color = '#2a7'; }
+  const r = await api.checkHeroSms($('#set-herosms-key').value.trim());
+  if (r.ok) { el.textContent = `✅ Balance: $${r.balance}`; el.style.color = '#2a7'; }
   else { el.textContent = `❌ ${r.error}`; el.style.color = '#d44'; }
 });
 $('#set-openai-show').addEventListener('click', () => {
@@ -596,7 +607,7 @@ $('#settings').addEventListener('close', async () => {
       defaultPassword: $('#set-password').value,
       defaultRecoveryEmail: $('#set-recovery').value.trim(),
       capsolverKey: $('#set-capsolver-key').value.trim(),
-      fiveSimToken: $('#set-5sim-token').value.trim(),
+      heroSmsKey: $('#set-herosms-key').value.trim(),
       proxyUrl: $('#set-proxy-url').value.trim(),
       openaiApiKey: $('#set-openai-key').value.trim(),
     });

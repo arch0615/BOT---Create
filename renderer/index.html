@@ -21,6 +21,7 @@
         <button id="view-table" class="seg" role="tab" aria-selected="false">Table</button>
       </div>
       <button id="btn-add" class="btn">Add images…</button>
+      <button id="btn-register-all" class="btn primary" disabled>Register All</button>
       <button id="btn-export" class="btn primary" disabled>Export CSV</button>
       <button id="btn-clear-all" class="btn danger" disabled>Remove All Cards</button>
       <button id="btn-settings" class="btn icon" title="Settings" aria-label="Settings">
@@ -153,16 +154,16 @@
         </span>
       </label>
       <p class="muted status-line" id="capsolver-status"></p>
-      <h3>SMS Verification (5sim)</h3>
-      <p class="muted">Optional. Uses 5sim.net to get a virtual phone number and auto-verify SMS during registration.</p>
-      <label>5sim API token
+      <h3>SMS Verification (HeroSMS)</h3>
+      <p class="muted">Optional. Uses hero-sms.com to get a virtual phone number and auto-verify SMS during registration.</p>
+      <label>HeroSMS API key
         <span class="input-row">
-          <input id="set-5sim-token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJhbG…" />
-          <button type="button" id="set-5sim-show" class="btn">Show</button>
-          <button type="button" id="check-5sim" class="btn">Check</button>
+          <input id="set-herosms-key" type="password" autocomplete="off" spellcheck="false" placeholder="API key from hero-sms.com" />
+          <button type="button" id="set-herosms-show" class="btn">Show</button>
+          <button type="button" id="check-herosms" class="btn">Check</button>
         </span>
       </label>
-      <p class="muted status-line" id="fivesim-status"></p>
+      <p class="muted status-line" id="herosms-status"></p>
       <h3>Proxy</h3>
       <p class="muted">Optional. Rotating residential proxy to avoid IP bans (e.g. http://user:pass@host:port).</p>
       <label>Proxy URL

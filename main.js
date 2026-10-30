@@ -31,7 +31,7 @@ let session = {
     defaultPassword: 'Cacata0!',
     defaultRecoveryEmail: 'botpotente0@libero.it',
     openaiApiKey: '',
-    fiveSimToken: '',
+    heroSmsKey: '',
     capsolverKey: '',
     proxyUrl: '',
   },
@@ -105,7 +105,7 @@ function loadSession() {
   }
   session.settings.defaultPassword = decrypt(session.settings.defaultPassword);
   session.settings.openaiApiKey = decrypt(session.settings.openaiApiKey);
-  session.settings.fiveSimToken = decrypt(session.settings.fiveSimToken);
+  session.settings.heroSmsKey = decrypt(session.settings.heroSmsKey);
   session.settings.capsolverKey = decrypt(session.settings.capsolverKey);
   for (const c of session.cards) {
     autoEmail(c); // cards saved before emails were generated automatically
@@ -121,7 +121,7 @@ function saveSession() {
     for (const k of SECRET_KEYS) fields[k] = encrypt(fields[k]);
     return { ...c, fields };
   });
-  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey), fiveSimToken: encrypt(session.settings.fiveSimToken), capsolverKey: encrypt(session.settings.capsolverKey) };
+  const settings = { ...session.settings, defaultPassword: encrypt(session.settings.defaultPassword), openaiApiKey: encrypt(session.settings.openaiApiKey), heroSmsKey: encrypt(session.settings.heroSmsKey), capsolverKey: encrypt(session.settings.capsolverKey) };
   fs.writeFileSync(sessionFile(), JSON.stringify({ ...session, settings, cards }));
 }
 
@@ -400,11 +400,12 @@ ipcMain.handle('settings:set', (_e, settings) => {
 });
 
 // --- Service status checks ---
-ipcMain.handle('status:5sim', async (_e, token) => {
-  const t = token || session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN;
-  if (!t) return { ok: false, error: 'No 5sim token configured' };
+ipcMain.handle('status:herosms', async (_e, key) => {
+  const k = key || session.settings.heroSmsKey || process.env.HERO_SMS_API_KEY;
+  if (!k) return { ok: false, error: 'No HeroSMS API key configured' };
   try {
-    const balance = await sms.getBalance(t);
+    const herosms = require('./lib/herosms');
+    const balance = await herosms.getBalance(k);
     return { ok: true, balance: parseFloat(balance).toFixed(2) };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -462,7 +463,7 @@ ipcMain.handle('login:open', async (_e, id) => {
 
   const { register } = require('./lib/browser');
   register(
-    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, fiveSimToken: session.settings.fiveSimToken || process.env.FIVE_SIM_TOKEN, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY, proxyUrl: session.settings.proxyUrl || process.env.PROXY_URL},
+    { username, password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, heroSmsKey: session.settings.heroSmsKey || process.env.HERO_SMS_API_KEY, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY, proxyUrl: session.settings.proxyUrl || process.env.PROXY_URL},
     (msg) => { try { if (win && !win.isDestroyed()) win.webContents.send('progress', { done: 0, total: 0, file: msg }); } catch {} }
   ).catch((err) => {
     console.error('Registration error:', err);
@@ -470,6 +471,54 @@ ipcMain.handle('login:open', async (_e, id) => {
   });
 
   return { email };
+});
+
+ipcMain.handle('login:register-all', async () => {
+  const { register } = require('./lib/browser');
+  const cards = session.cards.filter(c => {
+    const email = c.fields.email || '';
+    const password = c.fields.password || '';
+    const username = c.fields.username || email.split('@')[0];
+    return !!(username && password);
+  });
+  if (!cards.length) throw new Error('No cards with username + password');
+
+  const log = (msg) => { try { if (win && !win.isDestroyed()) win.webContents.send('progress', { done: 0, total: 0, file: msg }); } catch {} };
+  const results = [];
+
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    const email = card.fields.email || '';
+    const username = card.fields.username || email.split('@')[0];
+    log(`[${i + 1}/${cards.length}] Registering: ${username}…`);
+
+    try {
+      const status = await register(
+        { username, password: card.fields.password, name: card.fields.name, surname: card.fields.surname, birthDate: card.fields.birth_date, sex: card.fields.sex, city: card.fields.res_city, recoveryEmail: card.fields.recovery_email || session.settings.defaultRecoveryEmail, heroSmsKey: session.settings.heroSmsKey || process.env.HERO_SMS_API_KEY, capsolverKey: session.settings.capsolverKey || process.env.CAPSOLVER_API_KEY, proxyUrl: session.settings.proxyUrl || process.env.PROXY_URL },
+        log
+      );
+      results.push({ username, status: status || 'success' });
+      if (status === 'already_registered') {
+        log(`[${i + 1}/${cards.length}] ${username} — already registered, skipping.`);
+      } else {
+        log(`[${i + 1}/${cards.length}] ${username} — registered successfully!`);
+      }
+    } catch (err) {
+      results.push({ username, status: 'error', message: err.message });
+      log(`[${i + 1}/${cards.length}] ${username} — error: ${err.message}`);
+    }
+
+    if (i < cards.length - 1) {
+      log(`Waiting 5s before next registration…`);
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+
+  const ok = results.filter(r => r.status === 'success').length;
+  const skipped = results.filter(r => r.status === 'already_registered').length;
+  const failed = results.filter(r => r.status === 'error').length;
+  log(`✅ Batch complete: ${ok} registered, ${skipped} skipped, ${failed} failed.`);
+  return results;
 });
 
 ipcMain.handle('file:reveal', (_e, p) => shell.showItemInFolder(p));
