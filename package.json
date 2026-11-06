@@ -4,7 +4,7 @@
   "description": "Reads Italian electronic ID cards (CIE) offline and exports the data as CSV",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node start.js",
     "test": "node test/accuracy.js",
     "build-csv": "node build-csv.js",
     "dist": "electron-builder --win nsis"
@@ -42,7 +42,10 @@
       "!ID cards/**",
       "!cards.*",
       "!build-csv.js",
-      "!dist/**"
+      "!dist/**",
+      "!.env",
+      "!*.log",
+      "!debug-*.png"
     ],
     "extraResources": [
       {

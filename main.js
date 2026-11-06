@@ -1,5 +1,6 @@
 // Electron main process: OCR pipeline, session storage and CSV export.
-require('dotenv').config();
+try { require('dotenv').config(); } catch {}
+
 const { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
