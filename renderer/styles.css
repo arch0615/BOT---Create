@@ -97,6 +97,14 @@ button { font: inherit; }
 .images figcaption { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
 .img-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: 120px; display: grid; place-items: center; color: var(--muted); }
 .img-box img { display: block; width: 100%; cursor: zoom-in; }
+.img-box { position: relative; }
+.img-box .img-replace { position: absolute; bottom: 6px; right: 6px; font-size: 11px; padding: 2px 8px; opacity: 0; transition: opacity .15s; }
+.img-box:hover .img-replace { opacity: 1; }
+.img-box .mini-btn { margin-top: 8px; }
+
+.merge-box { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; }
+.merge-box span { flex-basis: 100%; }
+.merge-select { flex: 1; height: 30px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 13px; padding: 0 8px; background: var(--surface); color: var(--text); }
 
 .notes { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .notes li { background: var(--warn-bg); color: var(--warn); padding: 8px 12px; border-radius: 6px; font-size: 13px; }

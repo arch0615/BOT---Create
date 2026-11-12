@@ -78,19 +78,43 @@ function renderList() {
 
 // --- Card view ------------------------------------------------------------------------------------
 const imageCache = new Map();
-async function showImage(box, file, label) {
+async function showImage(box, file, label, cardId, side) {
   box.replaceChildren();
   if (!file) {
-    box.textContent = `${label} image missing`;
+    box.append(
+      el('span', { text: `${label} image missing` }),
+      el('button', { class: 'btn mini-btn', text: `Set ${label.toLowerCase()}…`, onclick: () => setImage(cardId, side) })
+    );
     return;
   }
   if (!imageCache.has(file)) imageCache.set(file, await api.imageData(file));
   const src = imageCache.get(file);
   if (!src) {
-    box.textContent = 'Image file not found';
+    box.append(
+      el('span', { text: 'Image file not found' }),
+      el('button', { class: 'btn mini-btn', text: `Replace…`, onclick: () => setImage(cardId, side) })
+    );
     return;
   }
-  box.append(el('img', { src, alt: `${label} of the card`, title: `${file}\nClick to enlarge`, onclick: () => openLightbox(src) }));
+  box.append(
+    el('img', { src, alt: `${label} of the card`, title: `${file}\nClick to enlarge`, onclick: () => openLightbox(src) }),
+    el('button', { class: 'btn mini-btn img-replace', text: 'Replace…', onclick: () => setImage(cardId, side) })
+  );
+}
+
+async function setImage(cardId, side) {
+  try {
+    const updated = await api.setCardImage(cardId, side);
+    if (!updated) return;
+    imageCache.delete(updated.front);
+    imageCache.delete(updated.back);
+    replaceCard(updated);
+    renderList();
+    renderCard();
+    toast(`${side.charAt(0).toUpperCase() + side.slice(1)} image updated.`);
+  } catch (err) {
+    toast(`Error: ${err.message}`);
+  }
 }
 
 function fieldMessage(card, key) {
@@ -185,8 +209,43 @@ function renderCard() {
 
   $('#notes').replaceChildren(...(card.notes || []).map((n) => el('li', { text: n })));
   renderForm(card);
-  showImage($('#img-front'), card.front, 'Front');
-  showImage($('#img-back'), card.back, 'Back');
+  showImage($('#img-front'), card.front, 'Front', card.id, 'front');
+  showImage($('#img-back'), card.back, 'Back', card.id, 'back');
+
+  // Merge UI: show when this card is missing a side and another card has the complementary side
+  const mergeBox = document.getElementById('merge-box') || (() => {
+    const d = document.createElement('div');
+    d.id = 'merge-box';
+    d.className = 'merge-box';
+    document.querySelector('.images').append(d);
+    return d;
+  })();
+  mergeBox.replaceChildren();
+  const missingSide = !card.front ? 'front' : !card.back ? 'back' : null;
+  if (missingSide) {
+    const candidates = state.cards.filter((c) => c.id !== card.id && (missingSide === 'front' ? c.front : c.back));
+    if (candidates.length) {
+      const sel = el('select', { class: 'merge-select' },
+        el('option', { value: '', text: `Merge ${missingSide} from…` }),
+        ...candidates.map((c) => el('option', { value: c.id, text: displayName(c) + (c.fields.document_number ? ` (${c.fields.document_number})` : '') }))
+      );
+      const btn = el('button', { class: 'btn', text: 'Merge', disabled: 'true', onclick: async () => {
+        if (!sel.value) return;
+        try {
+          const updated = await api.mergeCards(card.id, sel.value);
+          imageCache.delete(updated.front);
+          imageCache.delete(updated.back);
+          replaceCard(updated);
+          state.cards = state.cards.filter((c) => c.id !== sel.value);
+          renderList();
+          renderCard();
+          toast('Cards merged.');
+        } catch (err) { toast(`Error: ${err.message}`); }
+      }});
+      sel.addEventListener('change', () => { btn.disabled = !sel.value; });
+      mergeBox.append(el('span', { text: `This card is missing the ${missingSide}. Merge with another card:` }), sel, btn);
+    }
+  }
 }
 
 function select(id) {

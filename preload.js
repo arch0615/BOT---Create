@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('api', {
   processImages: (paths) => ipcRenderer.invoke('images:process', paths),
   updateCard: (id, changes, reviewed) => ipcRenderer.invoke('card:update', id, changes, reviewed),
   deleteCard: (id) => ipcRenderer.invoke('card:delete', id),
+  setCardImage: (id, side) => ipcRenderer.invoke('card:set-image', id, side),
+  mergeCards: (targetId, sourceId) => ipcRenderer.invoke('card:merge', targetId, sourceId),
   clearCards: () => ipcRenderer.invoke('cards:clear'),
   setSettings: (s) => ipcRenderer.invoke('settings:set', s),
   exportCsv: () => ipcRenderer.invoke('csv:export'),

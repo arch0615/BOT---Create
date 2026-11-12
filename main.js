@@ -364,6 +364,108 @@ ipcMain.handle('card:delete', (_e, id) => {
   saveSession();
 });
 
+// Assign a new front or back image to an existing card (pick via file dialog, OCR it, re-extract).
+ipcMain.handle('card:set-image', async (_e, id, side) => {
+  if (side !== 'front' && side !== 'back') throw new Error('side must be "front" or "back"');
+  const card = session.cards.find((c) => c.id === id);
+  if (!card) throw new Error('Card not found');
+
+  const r = await dialog.showOpenDialog(win, {
+    title: `Select ${side} image`,
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'tif', 'tiff', 'webp'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled || !r.filePaths.length) return null;
+
+  const file = r.filePaths[0];
+  const ocr = await getEngine();
+  const result = { file, ...(await ocr.readImage(file)) };
+
+  card[side] = file;
+  if (!card.ocr) card.ocr = {};
+  card.ocr[side] = result;
+
+  // Re-extract with both sides
+  const { fields, status, notes } = extractCard(card.ocr.front || null, card.ocr.back || null, session.settings);
+  if (!card.front) notes.unshift('Front image missing');
+  if (!card.back) notes.unshift('Back image missing');
+
+  // Preserve user edits (status 'edited')
+  for (const k of Object.keys(fields)) {
+    if (card.status[k] === 'edited') {
+      fields[k] = card.fields[k];
+      status[k] = 'edited';
+    }
+  }
+  card.fields = fields;
+  card.status = status;
+  card.notes = notes;
+
+  // Re-run vision if available
+  const apiKey = session.settings.openaiApiKey;
+  if (apiKey) {
+    try {
+      const vision = await extractWithVision(apiKey, card.front, card.back);
+      if (vision) enhanceWithVision(card, vision);
+    } catch {}
+  }
+
+  autoEmail(card);
+  applyDefaults(card);
+  saveSession();
+  return view(card);
+});
+
+// Merge two cards: take the front from one and the back from the other.
+ipcMain.handle('card:merge', async (_e, targetId, sourceId) => {
+  const target = session.cards.find((c) => c.id === targetId);
+  const source = session.cards.find((c) => c.id === sourceId);
+  if (!target || !source) throw new Error('Card not found');
+
+  // Determine which side to take from source
+  if (!target.front && source.front) {
+    target.front = source.front;
+    if (!target.ocr) target.ocr = {};
+    target.ocr.front = source.ocr && source.ocr.front;
+  } else if (!target.back && source.back) {
+    target.back = source.back;
+    if (!target.ocr) target.ocr = {};
+    target.ocr.back = source.ocr && source.ocr.back;
+  } else {
+    throw new Error('Cannot merge: no complementary sides found');
+  }
+
+  // Re-extract
+  const { fields, status, notes } = extractCard(target.ocr.front || null, target.ocr.back || null, session.settings);
+  if (!target.front) notes.unshift('Front image missing');
+  if (!target.back) notes.unshift('Back image missing');
+  for (const k of Object.keys(fields)) {
+    if (target.status[k] === 'edited') {
+      fields[k] = target.fields[k];
+      status[k] = 'edited';
+    }
+  }
+  target.fields = fields;
+  target.status = status;
+  target.notes = notes;
+
+  const apiKey = session.settings.openaiApiKey;
+  if (apiKey) {
+    try {
+      const vision = await extractWithVision(apiKey, target.front, target.back);
+      if (vision) enhanceWithVision(target, vision);
+    } catch {}
+  }
+
+  autoEmail(target);
+  applyDefaults(target);
+
+  // Remove the source card
+  session.cards = session.cards.filter((c) => c.id !== sourceId);
+  saveSession();
+  return view(target);
+});
+
 ipcMain.handle('cards:clear', async () => {
   const r = await dialog.showMessageBox(win, {
     type: 'warning',
